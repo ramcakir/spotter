@@ -55,7 +55,7 @@ export function useCameraDetection(settings: Settings, onHit: (l: string) => voi
       if (hit) {
         const now = Date.now()
         if (now - lastRingRef.current >= settings.cooldown) {
-          lastRingRef.current = now; countRef.current++; setLastHit(hit.class); onHit(hit.class)
+          lastRingRef.current = now; countRef.current++; setLastHit(hit.class); onHit(hit.class as string)
         } else {
           setCdProgress(1 - ((now - lastRingRef.current)/settings.cooldown))
         }
