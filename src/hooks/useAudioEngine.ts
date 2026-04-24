@@ -3,7 +3,14 @@ import { useRef, useEffect } from 'react'
 export function useAudioEngine() {
   const ctxRef = useRef<AudioContext | null>(null)
 
-  useEffect(() => () => ctxRef.current?.close(), [])
+  // Cleanup: close audio context on unmount (sync, no Promise return)
+  useEffect(() => {
+    return () => {
+      if (ctxRef.current) {
+        ctxRef.current.close() // Don't return the Promise
+      }
+    }
+  }, [])
 
   const play = (target: string) => {
     if (!ctxRef.current) {
@@ -58,7 +65,6 @@ export function useAudioEngine() {
     // --- Per-Target Synthesis ---
     switch (target) {
       case 'cat':
-        // 3 quick chirps with upward pitch sweep & fast decay
         [0, 0.12, 0.24].forEach((t, i) => {
           const osc = ctx.createOscillator()
           const gain = ctx.createGain()
@@ -76,16 +82,14 @@ export function useAudioEngine() {
         break
 
       case 'dog':
-        // 2 gruff barks: square/saw mix + breathy noise burst
-        [0, 0.18].forEach((t, i) => {
-          tone(120 + i * 20, 'square', t, 0.14, 0.35, 600)
-          tone(160 + i * 15, 'sawtooth', t, 0.12, 0.2, 400)
+        [0, 0.18].forEach((t) => {
+          tone(120, 'square', t, 0.14, 0.35, 600)
+          tone(160, 'sawtooth', t, 0.12, 0.2, 400)
           noise(t, 0.12, 0.15)
         })
         break
 
       case 'person':
-        // Classic ding-dong: E5 → C5 with harmonic overtones
         [0, 0.35].forEach((t, i) => {
           const f = i === 0 ? 659.25 : 523.25
           tone(f, 'sine', t, 0.25, 0.4)
@@ -95,7 +99,6 @@ export function useAudioEngine() {
         break
 
       case 'bicycle':
-        // Bright metallic bell: 2 strikes with harmonic stack & quick decay
         [0, 0.25].forEach(t => {
           tone(2400, 'sine', t, 0.15, 0.35, 3000)
           tone(4800, 'sine', t, 0.1, 0.15, 5000)
@@ -104,43 +107,42 @@ export function useAudioEngine() {
         break
 
       case 'car':
-        // Dual-tone horn: slightly detuned sawtooth + lowpass for muffled realism
         tone(330, 'sawtooth', 0, 0.45, 0.35, 800)
         tone(415.3, 'sawtooth', 0, 0.45, 0.35, 800)
-        tone(331.5, 'square', 0.02, 0.4, 0.15, 600) // micro-detune for beating effect
+        tone(331.5, 'square', 0.02, 0.4, 0.15, 600)
         break
 
       case 'motorcycle':
-        // Engine rev: rising pitch saw+square, filtered sweep, noise component
-        const revOsc1 = ctx.createOscillator()
-        const revOsc2 = ctx.createOscillator()
-        const revGain = ctx.createGain()
-        const revFilter = ctx.createBiquadFilter()
-        revOsc1.type = 'sawtooth'
-        revOsc2.type = 'square'
-        revFilter.type = 'lowpass'
-        revOsc1.frequency.setValueAtTime(110, now)
-        revOsc1.frequency.exponentialRampToValueAtTime(280, now + 0.7)
-        revOsc2.frequency.setValueAtTime(112, now)
-        revOsc2.frequency.exponentialRampToValueAtTime(285, now + 0.7)
-        revFilter.frequency.setValueAtTime(400, now)
-        revFilter.frequency.exponentialRampToValueAtTime(1200, now + 0.5)
-        revGain.gain.setValueAtTime(0.001, now)
-        revGain.gain.linearRampToValueAtTime(0.3, now + 0.05)
-        revGain.gain.linearRampToValueAtTime(0.35, now + 0.4)
-        revGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85)
-        revOsc1.connect(revFilter)
-        revOsc2.connect(revFilter)
-        revFilter.connect(revGain).connect(ctx.destination)
-        revOsc1.start(now)
-        revOsc2.start(now)
-        revOsc1.stop(now + 0.9)
-        revOsc2.stop(now + 0.9)
-        noise(0, 0.6, 0.12)
+        {
+          const revOsc1 = ctx.createOscillator()
+          const revOsc2 = ctx.createOscillator()
+          const revGain = ctx.createGain()
+          const revFilter = ctx.createBiquadFilter()
+          revOsc1.type = 'sawtooth'
+          revOsc2.type = 'square'
+          revFilter.type = 'lowpass'
+          revOsc1.frequency.setValueAtTime(110, now)
+          revOsc1.frequency.exponentialRampToValueAtTime(280, now + 0.7)
+          revOsc2.frequency.setValueAtTime(112, now)
+          revOsc2.frequency.exponentialRampToValueAtTime(285, now + 0.7)
+          revFilter.frequency.setValueAtTime(400, now)
+          revFilter.frequency.exponentialRampToValueAtTime(1200, now + 0.5)
+          revGain.gain.setValueAtTime(0.001, now)
+          revGain.gain.linearRampToValueAtTime(0.3, now + 0.05)
+          revGain.gain.linearRampToValueAtTime(0.35, now + 0.4)
+          revGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85)
+          revOsc1.connect(revFilter)
+          revOsc2.connect(revFilter)
+          revFilter.connect(revGain).connect(ctx.destination)
+          revOsc1.start(now)
+          revOsc2.start(now)
+          revOsc1.stop(now + 0.9)
+          revOsc2.stop(now + 0.9)
+          noise(0, 0.6, 0.12)
+        }
         break
 
       default:
-        // Fallback: sharp alarm dyad
         [0, 0.25, 0.5].forEach(t => {
           tone(880, 'square', t, 0.08, 0.2)
           tone(1318.51, 'square', t, 0.08, 0.2)
