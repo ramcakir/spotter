@@ -69,4 +69,12 @@ export function useAudioEngine() {
         break
       default:
         [0, 0.25, 0.5].forEach(t => {
-          playNote(880, 'square', t, 0.06
+          playNote(880, 'square', t, 0.06, 0.2)
+          playNote(1318.51, 'square', t, 0.06, 0.2)
+          playNote(440, 'sine', t, 0.08, 0.25)
+        })
+    }
+  }
+
+  return { play, ctxRef }
+}
